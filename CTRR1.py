@@ -1170,10 +1170,10 @@ class GraphApp:
             self.highlight_mst(mst, "Prim")
         except ValueError as e:
             messagebox.showerror("Lỗi", str(e))
-def find_euler_cycle(self):
-    if not self.graph.vertices:
-        messagebox.showwarning("Cảnh báo", "Đồ thị trống!")
-        return
+    def find_euler_cycle(self):
+        if not self.graph.vertices:
+            messagebox.showwarning("Cảnh báo", "Đồ thị trống!")
+            return
 
     # XÓA hoặc COMMENT dòng chặn có hướng
     # if self.graph.is_directed:
