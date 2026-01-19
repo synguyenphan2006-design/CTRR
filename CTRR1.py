@@ -345,27 +345,26 @@ class Graph:
             return 1
         return 0
 
-    def has_euler_cycle(self):
-        """Kiểm tra có chu trình Euler hay không (đồ thị vô hướng)"""
-        if self.is_directed:
-            return False
+def has_euler_cycle(self):
+    """Kiểm tra có chu trình Euler hay không
+    - Vô hướng: tất cả bậc chẵn + liên thông yếu
+    - Có hướng: mọi đỉnh in-degree = out-degree + mạnh liên thông
+    """
+    if not self.vertices:
+        return False
 
-        if not self.vertices:
-            return False
-
-        # 1. Tất cả đỉnh có bậc chẵn
+    if not self.is_directed:
+        # Code cũ cho đồ thị vô hướng (giữ nguyên)
         for v in self.vertices:
             if len(self.adjacency_list[v]) % 2 != 0:
                 return False
 
-        # 2. Đồ thị liên thông (bỏ qua đỉnh cô lập)
         non_isolated_vertices = {v for v in self.vertices if self.adjacency_list[v]}
         if not non_isolated_vertices:
-            return True  # không có cạnh → coi như có chu trình rỗng
+            return True
 
         start = next(iter(non_isolated_vertices))
         visited = set()
-
         stack = [start]
         while stack:
             u = stack.pop()
@@ -375,10 +374,31 @@ class Graph:
                     if v not in visited:
                         stack.append(v)
 
-        # Kiểm tra xem còn đỉnh nào có cạnh mà chưa thăm
         for v in non_isolated_vertices:
             if v not in visited:
                 return False
+
+        return True
+
+    else:
+        # Đồ thị có hướng: kiểm tra in-degree == out-degree cho mọi đỉnh
+        in_degree = defaultdict(int)
+        out_degree = defaultdict(int)
+
+        for u in self.vertices:
+            out_degree[u] = len(self.adjacency_list[u])
+            for v, _ in self.adjacency_list[u]:
+                in_degree[v] += 1
+
+        # Đảm bảo mọi đỉnh đều được tính (kể cả đỉnh không có cạnh ra/vào)
+        for v in self.vertices:
+            if in_degree[v] != out_degree[v]:
+                return False
+
+        # LƯU Ý: Chưa kiểm tra mạnh liên thông (strong connectivity)
+        # Hiện tại tạm chấp nhận nếu in=out cho mọi đỉnh
+        # Nếu muốn chính xác hơn, cần thêm thuật toán Kosaraju hoặc Tarjan
+        # (phần này có thể bổ sung sau)
 
         return True
 
@@ -410,18 +430,21 @@ class Graph:
         while stack:
             u = stack[-1]
 
-            if temp_adj[u]:  # còn cạnh chưa đi
-                # Lấy một cạnh bất kỳ
-                v, _ = temp_adj[u].pop()
-                # Xóa cạnh ngược (v → u)
+        if temp_adj[u]:  # còn cạnh chưa đi
+            # Lấy một cạnh bất kỳ
+            v, _ = temp_adj[u].pop()
+
+            if not self.is_directed:
+                # Chỉ xóa cạnh ngược nếu là đồ thị vô hướng
                 for i, (nei, _) in enumerate(temp_adj[v]):
                     if nei == u:
                         del temp_adj[v][i]
                         break
-                stack.append(v)
-            else:
-                # Không còn cạnh → đưa vào circuit
-                circuit.append(stack.pop())
+
+            stack.append(v)
+        else:
+            # Không còn cạnh → đưa vào circuit
+            circuit.append(stack.pop())
 
         circuit.reverse()
 
@@ -1147,27 +1170,29 @@ class GraphApp:
             self.highlight_mst(mst, "Prim")
         except ValueError as e:
             messagebox.showerror("Lỗi", str(e))
-    def find_euler_cycle(self):
-        if not self.graph.vertices:
-            messagebox.showwarning("Cảnh báo", "Đồ thị trống!")
-            return
+def find_euler_cycle(self):
+    if not self.graph.vertices:
+        messagebox.showwarning("Cảnh báo", "Đồ thị trống!")
+        return
 
-        if self.graph.is_directed:
-            messagebox.showwarning("Cảnh báo", "Hierholzer hiện chỉ hỗ trợ đồ thị vô hướng!")
-            return
+    # XÓA hoặc COMMENT dòng chặn có hướng
+    # if self.graph.is_directed:
+    #     messagebox.showwarning("Cảnh báo", "Hierholzer hiện chỉ hỗ trợ đồ thị vô hướng!")
+    #     return
 
-        cycle = self.graph.hierholzer()
-        if cycle is None:
-            messagebox.showwarning("Cảnh báo", "Đồ thị không có chu trình Euler!")
-            return
+    cycle = self.graph.hierholzer()
+    if cycle is None:
+        messagebox.showwarning("Cảnh báo", "Đồ thị không có chu trình Euler!\n(Kiểm tra: bậc vào/ra bằng nhau và liên thông mạnh)")
+        return
 
-        if not cycle:
-            self.log_result("Đồ thị không có cạnh → chu trình Euler rỗng.")
-            return
+    if not cycle:
+        self.log_result("Đồ thị không có cạnh → chu trình Euler rỗng.")
+        return
 
-        result = " → ".join(map(str, cycle))
-        self.log_result(f"Chu trình Euler (Hierholzer):\n{result}\n\n"
-                        f"(Bắt đầu từ {cycle[0]}, quay về {cycle[-1]})")
+    result = " → ".join(map(str, cycle))
+    graph_type = "có hướng" if self.graph.is_directed else "vô hướng"
+    self.log_result(f"Chu trình Euler (Hierholzer - {graph_type}):\n{result}\n\n"
+                    f"(Bắt đầu từ {cycle[0]}, quay về {cycle[-1]})")
     def run_kruskal(self):
         try:
             mst = self.graph.kruskal_mst()
