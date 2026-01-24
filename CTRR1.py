@@ -396,10 +396,7 @@ class Graph:
                 if in_degree[v] != out_degree[v]:
                     return False
 
-            # LƯU Ý: Chưa kiểm tra mạnh liên thông (strong connectivity)
-            # Hiện tại tạm chấp nhận nếu in=out cho mọi đỉnh
-            # Nếu muốn chính xác hơn, cần thêm thuật toán Kosaraju hoặc Tarjan
-            # (phần này có thể bổ sung sau)
+            
 
             return True
 
@@ -1278,7 +1275,7 @@ class GraphApp:
 
 
 def main():
-    """Chương trình chính"""
+    """Chương trình chính"""   
     root = tk.Tk()
     app = GraphApp(root)
     root.mainloop()
